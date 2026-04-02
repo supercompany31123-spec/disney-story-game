@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎢 迪士尼的一天 — 與小銀的女兒</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    overflow: hidden;
+    background: #0a0a1a;
+  }
+  #bg {
+    position: fixed;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    transition: opacity 1s ease;
+    z-index: 0;
+  }
+  #bg-overlay {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(10,10,30,0.3) 0%, rgba(10,10,30,0.7) 60%, rgba(10,10,30,0.95) 100%);
+    z-index: 1;
+  }
+  #game {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 700px;
+    padding: 30px 30px 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  #story-box {
+    background: rgba(10, 10, 40, 0.85);
+    border: 2px solid rgba(255, 215, 0, 0.4);
+    border-radius: 20px;
+    padding: 28px 32px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 0 60px rgba(255,215,0,0.1);
+    backdrop-filter: blur(8px);
+    min-height: 260px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  #scene-title {
+    font-size: 0.85rem;
+    color: #ffd700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    opacity: 0.8;
+  }
+  #story-text {
+    font-size: 1.15rem;
+    line-height: 1.9;
+    color: #f0f0f0;
+    margin-bottom: 24px;
+  }
+  #choices {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+  }
+  .choice-btn {
+    background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,215,0,0.05));
+    border: 1px solid rgba(255,215,0,0.4);
+    color: #ffd700;
+    padding: 14px 24px;
+    border-radius: 12px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+  }
+  .choice-btn:hover {
+    background: linear-gradient(135deg, rgba(255,215,0,0.3), rgba(255,215,0,0.15));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(255,215,0,0.2);
+  }
+  .choice-btn:active {
+    transform: translateY(0);
+  }
+  #result-box {
+    display: none;
+    background: rgba(10, 10, 40, 0.85);
+    border: 2px solid rgba(255,215,0,0.4);
+    border-radius: 20px;
+    padding: 28px 32px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.6), 0 0 60px rgba(255,215,0,0.1);
+    backdrop-filter: blur(8px);
+    min-height: 260px;
+    flex-direction: column;
+    justify-content: center;
+  }
+  #result-box.show { display: flex; }
+  #result-box.hidden { display: none; }
+  #result-emoji { font-size: 4rem; margin-bottom: 16px; }
+  #result-title { font-size: 1.5rem; color: #ffd700; margin-bottom: 12px; }
+  #result-text { font-size: 1.05rem; color: #ddd; line-height: 1.8; }
+  #restart-btn {
+    margin-top: 20px;
+    background: linear-gradient(135deg, #c9a84c, #a07830);
+    color: #fff;
+    border: none;
+    padding: 12px 36px;
+    border-radius: 25px;
+    font-size: 1rem;
+    cursor: pointer;
+    font-weight: bold;
+    display: none;
+  }
+  #restart-btn.show { display: inline-block; }
+  #restart-btn:hover { background: linear-gradient(135deg, #d4b85c, #b08a40); }
+  .fade-in { animation: fadeIn 0.8s ease-out; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<div id="bg"></div>
+<div id="bg-overlay"></div>
+
+<div id="game">
+  <div id="story-box" class="fade-in">
+    <div id="scene-title">場景一</div>
+    <div id="story-text">載入中...</div>
+    <div id="choices"></div>
+  </div>
+  <div id="result-box" class="hidden">
+    <div id="result-emoji"></div>
+    <div id="result-title"></div>
+    <div id="result-text"></div>
+    <button id="restart-btn">🔄 重新開始</button>
+  </div>
+</div>
+
+<script>
+// 背景圖片（使用 Unsplash free images）
+const BACKGROUNDS = [
+  'https://images.unsplash.com/photo-161漏3398277122-4858922d52c6?w=1920&q=80',
+  'https://images.unsplash.com/photo-1568731706899-7d3e8cc2ba01?w=1920&q=80',
+  'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80',
+  'https://images.unsplash.com/photo-1606808691498-57277d279302?w=1920&q=80',
+  'https://images.unsplash.com/photo-1514119412350-e174d90d280e?w=1920&q=80',
+];
+
+const FALLBACK_BG = 'https://images.unsplash.com/photo-1624696268886-3e72d7f09b7d?w=1920&q=80';
+
+// 故事數據
+const scenes = {
+  start: {
+    title: '🌟 序幕',
+    text: '今天是個特別的日子。你帶著女兒來到迪士尼樂園入口。<br><br>陽光普照，女兒興奮地拉著你的手，眼睛亮晶晶地說：<br><br>「拔拔～我們先去哪裡呀？」',
+    bg: 'https://images.unsplash.com/photo-1568731706899-7d3e8cc2ba01?w=1920&q=80',
+    choices: [
+      { text: '✨ 先去抽 FastPass！熱門設施先預約再說', next: 'fastpass' },
+      { text: '🎢 衝啊！直接去排最想玩的設施', next: 'first_ride' },
+      { text: '📸 先去城堡前面拍一張難忘的照片', next: 'castle_photo' },
+    ]
+  },
+
+  fastpass: {
+    title: '🎫 FastPass 亭',
+    text: '你們來到 FastPass 領取機前。<br><br>女兒好奇地看著機器：「拔拔這是什麼呀？」<br><br>你成功抽到了「雪嶺滑雪」的下午時段！這時女兒說她看到旁邊有氣球攤位...',
+    bg: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80',
+    choices: [
+      { text: '🎈 買一個氣球給她，開心最重要', next: 'balloon' },
+      { text: '🛍️ 不行，拿著氣球等一下玩設施不方便', next: 'no_balloon' },
+      { text: '📸 順路經過，乾脆先去城堡拍張照', next: 'castle_photo' },
+    ]
+  },
+
+  first_ride: {
+    title: '🎢 設施排隊中',
+    text: '你們衝到了「小小世界」，隊伍比想像中長。<br><br>排了15分鐘後，女兒開始有點不耐煩：「拔拔～還要多久呀？」<br><br>這時你注意到旁邊有花車遊行正好經過...',
+    bg: 'https://images.unsplash.com/photo-1514119412350-e174d90d280e?w=1920&q=80',
+    choices: [
+      { text: '🚢 忍耐一下！快到了，堅持就是勝利', next: 'wait_world' },
+      { text: '�花車🚢 帶她去看遊行，設施晚點再排', next: 'parade' },
+      { text: '🍦 買支冰淇淋安撫她，再繼續排', next: 'icecream' },
+    ]
+  },
+
+  castle_photo: {
+    title: '📸 城堡前',
+    text: '灰姑娘城堡在藍天下閃閃發光，壯觀極了！<br><br>你拿出相機，但女兒突然說：「拔拔，我想跟公主拍照！」<br><br>遠處你看到公主正在合影區，不過排隊的人有點多...',
+    bg: 'https://images.unsplash.com/photo-1606808691498-57277d279302?w=1920&q=80',
+    choices: [
+      { text: '👸 當然好！排隊等公主合影', next: 'princess_photo' },
+      { text: '🏰 先拍城堡和她，公主下次再說', next: 'no_princess' },
+      { text: '🎁 買個公主髮夾當紀念品代替排隊', next: 'princess_accessory' },
+    ]
+  },
+
+  balloon: {
+    title: '🎈 氣球攤位',
+    text: '女兒拿到了一個繽紛的氣球，笑得像個小天使。<br><br>她開心地說：「拔拔你看！我的氣球像雲朵一樣！」<br><br>但玩了一個設施後，你發現她雙手拿著零食和氣球，東西越來越多了...',
+    bg: 'https://images.unsplash.com/photo-1568731706899-7d3e8cc2ba01?w=1920&q=80',
+    choices: [
+      { text: '🗄️ 寄放到一旁的置物櫃', next: 'locker' },
+      { text: '👶 讓她開心就好，想辦法拿著', next: 'keep_balloon' },
+      { text: '🎁 帮她把東西集中放進背包', next: 'backpack' },
+    ]
+  },
+
+  // ── 分支結局 ──
+
+  wait_world: {
+    title: '🚢 小小世界',
+    text: '你鼓勵女兒：「再一下下就好！」<br><br>終於輪到你們了！<br><br>小小世界的船缓缓前進，兩岸是五彩繽紛的各國娃娃，女兒看得目不轉睛：<br><br>「拔拔～好漂亮呀！」',
+    bg: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80',
+    choices: [
+      { text: '➡️ 繼續冒險', next: 'afternoon' },
+    ]
+  },
+
+  parade: {
+    title: '�花車🚢',
+    text: '你抱起女兒擠到前排！<br><br>迪士尼明星們乘著花車熱情挥手，女兒興奮地又叫又跳：<br><br>「拔拔！是米奇！還有唐老鴨！！」<br><br>她的笑聲比什麼都值得。',
+    bg: 'https://images.unsplash.com/photo-1514119412350-e174d90d280e?w=1920&q=80',
+    choices: [
+      { text: '➡️ 繼續冒險', next: 'afternoon' },
+    ]
+  },
+
+  icecream: {
+    title: '🍦 冰淇淋時光',
+    text: '你買了一支草莓冰淇淋給她。<br><br>女兒舔了一口，眼睛亮了：「好好吃！」<br><br>吃完心情好了不少，這時她說：「拔拔，我想去玩那個會轉轉的！」她指的是旁边的旋轉木馬。',
+    bg: 'https://images.unsplash.com/photo-1568731706899-7d3e8cc2ba01?w=1920&q=80',
+    choices: [
+      { text: '➡️ 繼續冒險', next: 'afternoon' },
+    ]
+  },
+
+  princess_photo: {
+    title: '👸 公主合影',
+    text: '排了大約二十分鐘，終於輪到你们！<br><br>公主親切地彎下身，拉著女兒的手說：「你好漂亮呀！」<br><br>女兒害羞又開心，這一刻被她牢牢記住了。<br><br>「拔拔！我下次還要來找公主！」',
+    bg: 'https://images.unsplash.com/photo-1606808691498-57277d279302?w=1920&q=80',
+    choices: [
+      { text: '➡️ 繼續冒險', next: 'afternoon' },
+    ]
+  },
+
+  no_princess: {
+    title: '📸 城堡回憶',
+    text: '女兒雖然有點失望，但看到城堡照片裡自己的笑臉，也就不在意了。<br><br>「好吧！那我們快去玩吧！」<br><br>她立馬又充滿了電力，拉著你往下一個設施跑去。',
+    bg: 'https://images.unsplash.com/photo-1606808691498-57277d279302?w=1920&q=80',
+    choices: [
+      { text: '➡️ 繼續冒險', next: 'afternoon' },
+    ]
+  },
+
+  princess_accessory: {
+    title: '🎁 公主髮夾',
+    text: '你幫女兒選了一個灰姑娘主題的髮夾。<br><br>她迫不及待地夾在頭上：「我是公主了！」<br><br>拿著髮夾，她彷彿真的獲得了魔法，整個人煥然發光！',
+    bg: 'https://images.unsplash.com/photo-1606808691498-57277d279302?w=1920&q=80',
+    choices: [
+      { text: '➡️ 繼續冒險', next: 'afternoon' },
+    ]
+  },
+
+  no_balloon: {
+    title: '👧 懂事的小身影',
+    text: '女兒有點失落，但還是乖乖點點頭。<br><br>「好吧...那我可以握著拔拔的手嗎？」<br><br>你心頭一暖，其實她要的從來不多。',
+    bg: 'https://images.unsplash.com/photo-1568731706899-7d3e8cc2ba01?w=1920&q=80',
+    choices: [
+      { text: '➡️ 繼續冒險', next: 'afternoon' },
+    ]
+  },
+
+  keep_balloon: {
+    title: '🎈 甜蜜的負擔',
+    text: '東西真的很多，但看到女兒抱著氣球滿足的表情，你覺得一切都值得。<br><br>「拔拔，今天好開心！」<br><br>她說的話，就是最好的禮物。',
+    bg: 'https://images.unsplash.com/photo-1568731706899-7d3e8cc2ba01?w=1920&q=80',
+    choices: [
+      { text: '➡️ 繼續冒險', next: 'afternoon' },
+    ]
+  },
+
+  backpack: {
+    title: '🎒 整理大師',
+    text: '你耐心幫她把東西收進背包，女兒說：「拔拔好厲害！」<br><br>看著被她整理得亂中有序的背包，你哭笑不得。<br><br>但起碼雙手自由了！',
+    bg: 'https://images.unsplash.com/photo-1568731706899-7d3e8cc2ba01?w=1920&q=80',
+    choices: [
+      { text: '➡️ 繼續冒險', next: 'afternoon' },
+    ]
+  },
+
+  locker: {
+    title: '🗄️ 置物櫃冒險',
+    text: '你說：「我們把氣球放這裡，等回來再拿！」<br><br>女兒有點擔心：「氣球會不會不見呀？」<br><br>你保證絕對不會，她才放心地拉著你的手離開。',
+    bg: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80',
+    choices: [
+      { text: '➡️ 繼續冒險', next: 'afternoon' },
+    ]
+  },
+
+  // ── 下午場景 ──
+
+  afternoon: {
+    title: '🌤️ 午後時光',
+    text: '下午兩點了，太陽有點大，你們都有點累。<br><br>女兒靠在你身邊：「拔拔，我餓了～」<br><br>你看到前面有兩家餐廳：一家是卡通主題餐廳（有米奇形狀的漢堡），一家是風景優美的湖濱餐廳。',
+    bg: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80',
+    choices: [
+      { text: '🍔 去卡通主題餐廳，有米奇漢堡！', next: 'cartoon_restaurant' },
+      { text: '🌊 去湖濱餐廳，風景美可以休息', next: 'lakeside_restaurant' },
+      { text: '🍦 先不吃了，去看劇場表演！', next: 'show' },
+    ]
+  },
+
+  cartoon_restaurant: {
+    title: '🍔 卡通主題餐廳',
+    text: '米奇形狀的漢堡可愛到你不忍心吃。<br><br>女兒卻大口咬下去：「好好吃！」<br><br>吃著吃著，她突然抬起頭：「拔拔，明天我們還可以來嗎？」',
+    bg: 'https://images.unsplash.com/photo-1568731706899-7d3e8cc2ba01?w=1920&q=80',
+    choices: [
+      { text: '➡️ 繼續冒險', next: 'fireworks_choice' },
+    ]
+  },
+
+  lakeside_restaurant: {
+    title: '🌊 湖濱餐廳',
+    text: '湖面波光粼粼，涼風吹來，你們難得悠閒地坐著。<br><br>女兒看著天鵝船說：「拔拔，下次我們划那個好不好？」<br><br>「好啊。」你笑著答應。',
+    bg: 'https://images.unsplash.com/photo-1606808691498-57277d279302?w=1920&q=80',
+    choices: [
+      { text: '➡️ 繼續冒險', next: 'fireworks_choice' },
+    ]
+  },
+
+  show: {
+    title: '🎭 劇場表演',
+    text: '迪士尼魔法音樂劇場響起，女兒看著空中飛舞的演員們，眼睛瞪得大大的。<br><br>「拔拔～好像童話故事走出來一樣！」<br><br>她忍不住站起來跟著音樂搖擺。',
+    bg: 'https://images.unsplash.com/photo-1514119412350-e174d90d280e?w=1920&q=80',
+    choices: [
+      { text: '➡️ 繼續冒險', next: 'fireworks_choice' },
+    ]
+  },
+
+  // ── 最終抉擇 ──
+
+  fireworks_choice: {
+    title: '🌙 夜幕降臨',
+    text: '天色漸暗，城堡的燈光亮起來了。<br><br>這時來到了最終抉擇：<br><br>「拔拔～今晚的煙火馬上要開始了！我們要站哪裡看呀？」<br><br>廣場上人山人海，你必須做個決定。',
+    bg: 'https://images.unsplash.com/photo-1606808691498-57277d279302?w=1920&q=80',
+    choices: [
+      { text: '🏰 城堡正前方 – 最經典視角', next: 'ending_classic' },
+      { text: '🌳 側邊草地上 – 輕鬆舒適', next: 'ending_park' },
+      { text: '🎠 旋轉木馬裡 – 浪漫至極', next: 'ending_carousel' },
+    ]
+  },
+
+  // ── 三個結局 ──
+
+  ending_classic: {
+    title: '🌟 結局：經典視角',
+    text: '你們站在城堡正前方，烟火在頭頂繽紛绽放。<br><br>女兒抬头看著滿天星光：「拔拔，這是我最快樂的一天！」<br><br>那一刻，你覺得帶她來是對的。<br><br>這就是爸ber最想要的 – 她的笑容。',
+    bg: 'https://images.unsplash.com/photo-1606808691498-57277d279302?w=1920&q=80',
+    emoji: '🏰',
+    endingTitle: '經典結局：城堡下的約定',
+    resultText: '你選擇了最經典的視角，城堡與煙火完美同框。女兒的笑容在火光中格外耀眼。這一天，你創造了她童年最美好的回憶之一。'
+  },
+
+  ending_park: {
+    title: '🌟 結局：草地上的星空',
+    text: '你們躺在草地上，滿天烟火倒映在她的眼裡。<br><br>「拔拔，星星掉下來了！」<br><br>她笑著在你身邊蹦蹦跳，你覺得：幸福，原來就是這個樣子。',
+    bg: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80',
+    emoji: '🌿',
+    endingTitle: '溫馨結局：草地上的約定',
+    resultText: '你選擇了輕鬆愜意的方式，在草地上與女兒一起躺著看煙火。她說這是她看過最美的星空。你的陪伴，就是最好的禮物。'
+  },
+
+  ending_carousel: {
+    title: '🌟 結局：旋轉木馬的奇蹟',
+    text: '當第一發烟火升起時，木馬正好轉到最高點。<br><br>女兒高舉雙手：「拔拔！我摸到天了！」<br><br>你不確定她摸到的是不是天，但她的笑聲，絕對是今天最珍貴的聲音。',
+    bg: 'https://images.unsplash.com/photo-1514119412350-e174d90d280e?w=1920&q=80',
+    emoji: '🎠',
+    endingTitle: '奇蹟結局：摸到天空的那一刻',
+    resultText: '你選擇了最浪漫的方式，木馬與煙火同步的奇蹟畫面就此誕生。「拔拔，我摸到天了！」——這句話，會讓你記一輩子。'
+  },
+};
+
+// ── 遊戲引擎 ──
+let currentScene = 'start';
+
+function setBg(url) {
+  const bg = document.getElementById('bg');
+  bg.style.opacity = '0';
+  setTimeout(() => {
+    bg.style.backgroundImage = `url(${url})`;
+    bg.style.opacity = '1';
+  }, 500);
+}
+
+function renderScene(sceneId) {
+  const scene = scenes[sceneId];
+  if (!scene) return;
+
+  // 檢查是否為結局
+  if (scene.emoji) {
+    showEnding(scene);
+    return;
+  }
+
+  currentScene = sceneId;
+  setBg(scene.bg);
+
+  document.getElementById('scene-title').textContent = scene.title;
+  document.getElementById('story-text').innerHTML = scene.text;
+
+  const choicesEl = document.getElementById('choices');
+  choicesEl.innerHTML = '';
+
+  scene.choices.forEach(choice => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn fade-in';
+    btn.textContent = choice.text;
+    btn.onclick = () => renderScene(choice.next);
+    choicesEl.appendChild(btn);
+  });
+
+  // 重新顯示 story-box
+  const storyBox = document.getElementById('story-box');
+  const resultBox = document.getElementById('result-box');
+  storyBox.classList.remove('hidden');
+  storyBox.classList.add('fade-in');
+  resultBox.classList.remove('show');
+  resultBox.classList.add('hidden');
+  document.getElementById('restart-btn').classList.remove('show');
+}
+
+function showEnding(scene) {
+  setBg(scene.bg);
+
+  const storyBox = document.getElementById('story-box');
+  const resultBox = document.getElementById('result-box');
+
+  storyBox.classList.add('hidden');
+  resultBox.classList.remove('hidden');
+  resultBox.classList.add('show', 'fade-in');
+
+  document.getElementById('result-emoji').textContent = scene.emoji;
+  document.getElementById('result-title').textContent = scene.endingTitle;
+  document.getElementById('result-text').textContent = scene.resultText;
+  document.getElementById('restart-btn').classList.add('show');
+}
+
+document.getElementById('restart-btn').onclick = () => {
+  renderScene('start');
+};
+
+// 預載背景圖
+const preloader = new Image();
+preloader.src = scenes.start.bg;
+
+// 啟動
+renderScene('start');
+</script>
+</body>
+</html>
